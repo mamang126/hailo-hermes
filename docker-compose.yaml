@@ -1,0 +1,48 @@
+services:
+  hermes:
+    image: nousresearch/hermes-agent:latest
+    container_name: hermes
+    restart: unless-stopped
+    command: gateway run
+    ports:
+      - "8642:8642"   # gateway API
+      - "9119:9119"   # dashboard (only reached when HERMES_DASHBOARD=1)
+    volumes:
+      - /home/miwoo/.hermes:/opt/data
+    environment:
+      - HERMES_DASHBOARD=1
+      - PATH=/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/hermes/.venv/bin
+      # Uncomment to forward specific env vars instead of using .env file:
+      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "2.0"
+  hailo-ollama:
+    container_name: hailo-ollama
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "11434:11434"     # OpenAI-compat proxy (what Home Assistant talks to)
+    devices:
+      - /dev/h1x-0:/dev/h1x-0   # Hailo NPU device
+    group_add:
+      - "0"
+    environment:
+      - OLLAMA_KEEP_ALIVE=-1
+      - HAILO_OLLAMA_VDEVICE_GROUP_ID=SHARED   # share NPU with hailo-whisper
+      - XDG_DATA_HOME=/usr/local/share
+      - LD_LIBRARY_PATH=/usr/lib               # find bind-mounted libhailort
+      # Optional: override proxy inference defaults (v1.0.1+)
+      # - OLLAMA_PROXY_NUM_CTX=1024
+      # - OLLAMA_PROXY_NUM_PREDICT=60
+      # - OLLAMA_PROXY_MAX_TOKENS=120
+    volumes:
+      - /usr/local/share/hailo-ollama:/usr/local/share/hailo-ollama
+      - /usr/bin/hailo-ollama:/usr/local/bin/hailo-ollama:ro
+      - /usr/lib/libhailort.so.5.3.0:/usr/lib/libhailort.so.5.3.0:ro
