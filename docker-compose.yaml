@@ -44,7 +44,8 @@ services:
       # - OLLAMA_PROXY_NUM_PREDICT=60
       # - OLLAMA_PROXY_MAX_TOKENS=120
     volumes:
-      - /usr/local/share/hailo-ollama:/usr/local/share/hailo-ollama  # blob storage (rw)
-      - /usr/share/hailo-ollama/models/manifests:/usr/local/share/hailo-ollama/models/manifests:ro  # overlay with real package manifests
+      - /usr/local/share/hailo-ollama:/usr/local/share/hailo-ollama                                         # base rw (for any hailo-ollama state)
+      - /usr/share/hailo-ollama/models/manifests:/usr/local/share/hailo-ollama/models/manifests:ro         # overlay: real package manifests
+      - /home/miwoo/.local/share/hailo-ollama/models/blob:/usr/local/share/hailo-ollama/models/blob       # overlay: downloaded HEF blobs
       - /usr/bin/hailo-ollama:/usr/local/bin/hailo-ollama:ro
       - /usr/lib/libhailort.so.5.3.0:/usr/lib/libhailort.so.5.3.0:ro
