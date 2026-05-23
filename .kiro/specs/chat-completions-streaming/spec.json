@@ -1,22 +1,22 @@
 {
-  "feature_name": "chat-completions-streaming",
-  "created_at": "2026-05-23T00:00:00.000Z",
-  "updated_at": "2026-05-23T00:00:00.000Z",
-  "language": "en",
-  "phase": "tasks-generated",
-  "approvals": {
-    "requirements": {
-      "generated": true,
-      "approved": true
+    "feature_name": "chat-completions-streaming",
+    "created_at": "2026-05-23T00:00:00.000Z",
+    "updated_at": "2026-05-23T00:00:00.000Z",
+    "language": "en",
+    "phase": "tasks-generated",
+    "approvals": {
+        "requirements": {
+            "generated": true,
+            "approved": true
+        },
+        "design": {
+            "generated": true,
+            "approved": true
+        },
+        "tasks": {
+            "generated": true,
+            "approved": true
+        }
     },
-    "design": {
-      "generated": true,
-      "approved": true
-    },
-    "tasks": {
-      "generated": true,
-      "approved": true
-    }
-  },
-  "ready_for_implementation": true
+    "ready_for_implementation": true
 }

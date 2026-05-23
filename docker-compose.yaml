@@ -28,6 +28,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
+      - "11436:11436"     # Hailo-ollama API (what the proxy talks to)
       - "11434:11434"     # OpenAI-compat proxy (what Home Assistant talks to)
     devices:
       - /dev/h1x-0:/dev/h1x-0   # Hailo NPU device
