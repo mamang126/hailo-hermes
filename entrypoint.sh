@@ -10,9 +10,6 @@
 
 set -e
 
-mkdir -p /usr/local/share/hailo-ollama/models/manifests/hailo-ollama
-mkdir -p /usr/local/share/hailo-ollama/models/blob
-
 # Start hailo-ollama on internal port 11436
 OLLAMA_HOST=0.0.0.0:11436 /usr/local/bin/hailo-ollama serve &
 HAILO_PID=$!
