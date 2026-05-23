@@ -28,3 +28,4 @@ __pycache__/
 .claude/scheduled_tasks.lock
 .claude/settings.local.json
 .claude/memory/
+.venv

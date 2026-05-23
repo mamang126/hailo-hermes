@@ -1,75 +1,60 @@
 # ============================================================
-# Dockerfile — wyoming-hailo-whisper
-# Wyoming STT server: full speech-to-text pipeline on Hailo NPU via genai API.
+# Dockerfile — hailo-ollama
+# OpenAI-compatibility proxy wrapping Hailo's hailo-ollama server.
 #
-# Build (automated via GitHub Actions):
-#   docker build \
-#     --build-arg HEF=whisper_small_en_encoder.hef \
-#     -t canthefason/wyoming-hailo-whisper:latest \
-#     .
+# This image contains ONLY our proxy code and runtime dependencies.
+# The hailo-ollama binary and HailoRT libraries are bind-mounted
+# from the Pi host at runtime — they are never baked in.
+# This makes the image freely publishable without redistributing
+# Hailo's proprietary binaries.
 #
-# The Speech2Text genai API handles mel spectrogram + encoder + decoder
-# entirely on the Hailo-10H NPU — torch and openai-whisper are NOT needed.
+# Required host bind-mounts (see compose.yaml):
+#   /usr/local/bin/hailo-ollama        — hailo-ollama server binary
+#   /usr/lib/libhailort.so.5.x.x       — HailoRT native library
+#   /usr/lib/aarch64-linux-gnu/libusb-1.0.so.0 — USB transport
+#   /usr/local/share/hailo-ollama      — model storage (read/write)
 #
-# hailo_platform is NOT installed in this image.
-# It is bind-mounted from the Pi host at runtime (see compose.yaml):
-#   /usr/local/lib/python3.x/dist-packages/hailo_platform  — Python bindings
-#   /usr/lib/libhailort.so.5.x.x                            — native library
-# This keeps the image free of Hailo's proprietary binaries and makes it
-# compatible with any HailoRT version installed on the host.
-#
-# PYTHON_VERSION must match the version hailo_platform was compiled for on
-# the host Pi. Check with:
-#   ls /usr/local/lib/python3.*/dist-packages/hailo_platform/pyhailort/
-# The .so filename contains the version (e.g. cpython-313 → set to "3.13").
-# Standard Raspberry Pi OS Bookworm ships Python 3.11.
+# Port layout:
+#   11434 — proxy (exposed; what Home Assistant talks to)
+#   11436 — hailo-ollama native server (internal only)
 # ============================================================
 
-ARG PYTHON_VERSION=3.13
-FROM python:${PYTHON_VERSION}-slim-bookworm
+FROM ubuntu:24.04
 
-# ── System dependencies ──────────────────────────────────────────────────────
-# libusb-1.0-0: required by libhailort for USB transport to the NPU.
-# Installing from apt (not bind-mounting from Pi) avoids glibc version mismatch:
-# the Pi's libusb is compiled against glibc 2.38; Bookworm only ships glibc 2.36.
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends libusb-1.0-0 && \
-    rm -rf /var/lib/apt/lists/*
+# Runtime deps:
+#   python3      — OpenAI-compat proxy
+#   curl         — hailo-ollama readiness probe in entrypoint
+#   libssl3      — hailo-ollama TLS
+#   libstdc++6   — C++ runtime for hailo-ollama
+#   libgcc-s1    — GCC support library
+#   libusb-1.0-0 — USB transport for HailoRT (fallback if not bind-mounted)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pytest \
+        curl \
+        libssl3 \
+        libstdc++6 \
+        libgcc-s1 \
+        libusb-1.0-0 \
+    && rm -rf /var/lib/apt/lists/*
 
-# ── Hailo soname symlink ─────────────────────────────────────────────────────
-# _pyhailort.so links against libhailort.so.5 (the soname), not the versioned
-# filename. Create the symlink at build time — it resolves correctly at runtime
-# once the versioned .so is bind-mounted from the Pi host. This eliminates the
-# need to bind-mount libhailort.so.5 separately in compose.yaml.
-ARG HAILORT_VERSION=5.3.0
-RUN ln -sf /usr/lib/libhailort.so.${HAILORT_VERSION} /usr/lib/libhailort.so.5
+# Run unit tests before installing the proxy so a regression fails the build.
+# Tests need proxy.py importable by its original name, so we stage in /tmp.
+COPY proxy.py      /tmp/proxy.py
+COPY test_proxy.py /tmp/test_proxy.py
+RUN cd /tmp && python3 -m pytest test_proxy.py -q && rm proxy.py test_proxy.py
 
-# ── Python dependencies ──────────────────────────────────────────────────────
-# wyoming  — Wyoming STT protocol
-# numpy    — audio buffer conversion (PCM-16 → float32)
-RUN pip install --no-cache-dir \
-        wyoming \
-        numpy
+# Proxy, prompt config, and entrypoint — our code only, no Hailo IP
+COPY proxy.py      /usr/local/bin/hailo-ollama-proxy.py
+COPY prompts.json  /usr/local/bin/prompts.json
+COPY entrypoint.sh /usr/local/bin/hailo-ollama-entrypoint.sh
+RUN chmod +x /usr/local/bin/hailo-ollama-entrypoint.sh
 
-# ── Application code ─────────────────────────────────────────────────────────
-COPY wyoming_hailo_whisper/ /app/wyoming_hailo_whisper/
-WORKDIR /app
+EXPOSE 11434
 
-# ── Hailo encoder HEF ────────────────────────────────────────────────────────
-# Combined encoder+decoder HEF compiled for the Hailo-10H NPU.
-# Used by hailo_platform.genai.Speech2Text — not compatible with the old
-# low-level InferModel API.
-ARG HEF=whisper_small_en_encoder.hef
-COPY ${HEF} /opt/whisper/encoder.hef
+ENV HAILO_INTERNAL_PORT=11436
+ENV OLLAMA_PROXY_PORT=11434
+ENV OLLAMA_HOST=0.0.0.0:11436
+ENV OLLAMA_KEEP_ALIVE=-1
 
-# ── Runtime ──────────────────────────────────────────────────────────────────
-EXPOSE 10300
-
-ARG WHISPER_MODEL=small.en
-ENV WHISPER_MODEL=${WHISPER_MODEL}
-
-CMD python3 -m wyoming_hailo_whisper \
-        --hef      /opt/whisper/encoder.hef \
-        --uri      tcp://0.0.0.0:10300 \
-        --model    $WHISPER_MODEL \
-        --language en
+ENTRYPOINT ["/usr/local/bin/hailo-ollama-entrypoint.sh"]
