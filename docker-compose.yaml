@@ -45,6 +45,7 @@ services:
       # - OLLAMA_PROXY_MAX_TOKENS=120
     volumes:
       - /usr/local/share/hailo-ollama:/usr/local/share/hailo-ollama
+      - /usr/share/hailo-ollama:/usr/share/hailo-ollama:ro   # package-installed manifests (XDG_DATA_DIRS default: /usr/share)
       - /home/miwoo/.local/share/hailo-ollama:/home/root/.local/share/hailo-ollama
       - /usr/bin/hailo-ollama:/usr/local/bin/hailo-ollama:ro
       - /usr/lib/libhailort.so.5.3.0:/usr/lib/libhailort.so.5.3.0:ro
