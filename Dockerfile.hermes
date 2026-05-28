@@ -17,8 +17,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Bootstrap pip (Hermes image doesn't include it)
 RUN curl -fsSL https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py \
-    && python3 /tmp/get-pip.py --no-cache-dir \
+    && python3 /tmp/get-pip.py --no-cache-dir --break-system-packages \
     && rm /tmp/get-pip.py
 
 # Install faster-whisper (runs entirely on CPU — does NOT use Hailo NPU)
-RUN pip install --no-cache-dir faster-whisper
+RUN pip install --no-cache-dir --break-system-packages faster-whisper
