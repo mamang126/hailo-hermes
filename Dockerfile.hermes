@@ -16,4 +16,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install faster-whisper (runs entirely on CPU — does NOT use Hailo NPU)
-RUN pip install --no-cache-dir faster-whisper
+# Hermes uses a venv at /opt/venv/ — use pip from there
+RUN /opt/venv/bin/pip install --no-cache-dir faster-whisper
