@@ -1,0 +1,19 @@
+# ============================================================
+# Dockerfile.hermes — Hermes Agent with faster-whisper STT
+#
+# Extends the official Hermes Agent image and adds local
+# speech-to-text via faster-whisper (no API key required).
+#
+# Used by the `hermes` service in docker-compose.yaml.
+# ============================================================
+
+FROM nousresearch/hermes-agent:latest
+
+# Audio deps needed by faster-whisper for loading audio files
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ffmpeg \
+        libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install faster-whisper (runs entirely on CPU — does NOT use Hailo NPU)
+RUN pip install --no-cache-dir faster-whisper

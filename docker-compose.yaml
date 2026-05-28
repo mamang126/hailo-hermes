@@ -1,6 +1,9 @@
 services:
   hermes:
-    image: nousresearch/hermes-agent:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.hermes
+    image: nousresearch/hermes-agent:whisper
     container_name: hermes
     restart: unless-stopped
     command: gateway run
