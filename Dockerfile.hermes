@@ -16,5 +16,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install faster-whisper (runs entirely on CPU — does NOT use Hailo NPU)
-# Hermes uses a venv at /opt/venv/ — use pip from there
-RUN /opt/venv/bin/pip install --no-cache-dir faster-whisper
+# Try multiple pip locations — Hermes image layout may vary
+RUN (pip install --no-cache-dir faster-whisper 2>/dev/null \
+     || python3 -m pip install --no-cache-dir faster-whisper 2>/dev/null \
+     || /opt/hermes/.venv/bin/pip install --no-cache-dir faster-whisper 2>/dev/null \
+     || /opt/venv/bin/pip install --no-cache-dir faster-whisper 2>/dev/null \
+     || { echo "ERROR: could not find pip in Hermes image"; exit 1; })
