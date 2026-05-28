@@ -20,6 +20,7 @@ services:
       # - OPENAI_API_KEY=${OPENAI_API_KEY}
       # - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - OPENCODE_GO_API_KEY=${OPENCODE_GO_API_KEY}
+      - DOKPLOY_API_KEY=${DOKPLOY_API_KEY}
     deploy:
       resources:
         limits:
