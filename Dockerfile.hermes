@@ -15,10 +15,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 
+# Bootstrap pip (Hermes image doesn't include it)
+RUN curl -fsSL https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py \
+    && python3 /tmp/get-pip.py --no-cache-dir \
+    && rm /tmp/get-pip.py
+
 # Install faster-whisper (runs entirely on CPU — does NOT use Hailo NPU)
-# Try multiple pip locations — Hermes image layout may vary
-RUN (pip install --no-cache-dir faster-whisper 2>/dev/null \
-     || python3 -m pip install --no-cache-dir faster-whisper 2>/dev/null \
-     || /opt/hermes/.venv/bin/pip install --no-cache-dir faster-whisper 2>/dev/null \
-     || /opt/venv/bin/pip install --no-cache-dir faster-whisper 2>/dev/null \
-     || { echo "ERROR: could not find pip in Hermes image"; exit 1; })
+RUN pip install --no-cache-dir faster-whisper
